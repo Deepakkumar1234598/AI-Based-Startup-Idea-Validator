@@ -5,15 +5,24 @@ from pydantic import BaseModel
 from langchain_groq import ChatGroq
 from tavily import TavilyClient
 from dotenv import load_dotenv
+from pathlib import Path
 import os
 
-load_dotenv()
 
+# Load .env from project root folder
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+
+# Initialize FastAPI
 app = FastAPI(
     title="Startup Idea Validator API",
+    version="0.1.0",
     description="AI-powered startup validation system"
 )
 
+
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -29,6 +38,7 @@ app.add_middleware(
 )
 
 
+# Request Model
 class StartupRequest(BaseModel):
     idea: str
     audience: str = "General customers"
@@ -36,6 +46,7 @@ class StartupRequest(BaseModel):
     budget: str = "Not specified"
 
 
+# Home API
 @app.get("/")
 def home():
     return {
@@ -43,8 +54,8 @@ def home():
     }
 
 
+# Generate Report Section
 def generate_report_part(llm, prompt):
-    """Generate one part of the startup report."""
 
     response = llm.invoke(prompt)
     content = response.content
@@ -62,16 +73,18 @@ def generate_report_part(llm, prompt):
     return content.strip()
 
 
+# Analyze Startup API
 @app.post("/analyze")
 def analyze_startup(data: StartupRequest):
 
+    # Get API Keys
     groq_key = os.getenv("GROQ_API_KEY")
     tavily_key = os.getenv("TAVILY_API_KEY")
 
     if not groq_key or not tavily_key:
         raise HTTPException(
             status_code=500,
-            detail="Groq or Tavily API key is missing."
+            detail="Groq or Tavily API key is missing. Check your .env file."
         )
 
     if not data.idea.strip():
@@ -81,6 +94,7 @@ def analyze_startup(data: StartupRequest):
         )
 
     try:
+
         # STEP 1: MARKET RESEARCH
 
         tavily = TavilyClient(api_key=tavily_key)
@@ -121,7 +135,7 @@ def analyze_startup(data: StartupRequest):
             api_key=groq_key
         )
 
-        # COMMON INSTRUCTIONS FOR ALL THREE PARTS
+        # COMMON INSTRUCTIONS
 
         common_context = f"""
 You are a professional startup consultant, market researcher,
@@ -153,11 +167,10 @@ IMPORTANT RULES:
 11. Do not repeat sections assigned to other parts.
 """
 
-
-        # STEP 3: GENERATE PART 1 (SECTIONS 1-4)
+        # STEP 3: PART 1 (SECTIONS 1-4)
 
         prompt_part_1 = common_context + """
-Generate PART 1 of the report.
+Generate PART 1 of the startup validation report.
 
 Start with:
 # Startup Validation Report
@@ -192,8 +205,7 @@ Do not start section 5.
 
         part_1 = generate_report_part(llm, prompt_part_1)
 
-
-        # STEP 4: GENERATE PART 2 (SECTIONS 5-8)
+        # STEP 4: PART 2 (SECTIONS 5-8)
 
         prompt_part_2 = common_context + """
 Generate PART 2 of the same startup validation report.
@@ -236,7 +248,7 @@ Do not start section 9.
 
         part_2 = generate_report_part(llm, prompt_part_2)
 
-        # STEP 5: GENERATE PART 3 (SECTIONS 9-12)
+        # STEP 5: PART 3 (SECTIONS 9-12)
 
         prompt_part_3 = common_context + """
 Generate PART 3 of the same startup validation report.
@@ -301,7 +313,7 @@ Do not leave any table unfinished.
 
         part_3 = generate_report_part(llm, prompt_part_3)
 
-        # STEP 6: COMBINE ALL THREE PARTS
+        # STEP 6: COMBINE ALL PARTS
 
         report = "\n\n".join([
             part_1,
@@ -312,7 +324,7 @@ Do not leave any table unfinished.
         if not report.strip():
             raise ValueError("Complete report could not be generated.")
 
-        # STEP 7: RETURN REPORT TO FRONTEND
+        # STEP 7: RETURN RESPONSE
 
         return {
             "success": True,
@@ -335,5 +347,3 @@ Do not leave any table unfinished.
             status_code=500,
             detail=f"Analysis failed: {str(e)}"
         )
-
-              

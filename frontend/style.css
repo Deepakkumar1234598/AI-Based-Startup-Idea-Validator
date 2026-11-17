@@ -664,3 +664,32 @@ footer {
 .pdf-export-mode .research-sources {
     overflow-wrap: anywhere !important;
 }
+ 
+/* MY REPORTS DESIGN */
+
+#savedReportsList {
+    margin-top: 20px;
+}
+
+.report-action-btn {
+    background: #5146c8;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.report-action-btn:hover {
+    background: #3930a6;
+}
+
+#savedReportsList .feature-card {
+    border: 1px solid #e6e8f0;
+    margin-bottom: 15px;
+}
+
+#savedReportsList .feature-card h3 {
+    overflow-wrap: anywhere;
+}

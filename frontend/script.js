@@ -1,11 +1,13 @@
 
 // ============================================
-// STARTUP VALIDATOR AI - COMPLETE JAVASCRIPT
-// Team Phoenix
+// STARTUP VALIDATOR AI - TEAM PHOENIX
+// My Reports + PDF Download
 // ============================================
 
+const API_URL =
+    "https://ai-based-startup-idea-validator-lvvt.onrender.com/analyze";
 
-// 1. GET HTML ELEMENTS
+const STORAGE_KEY = "startupValidatorReports";
 
 const validateBtn = document.getElementById("validateBtn");
 const downloadPdfBtn = document.getElementById("downloadPdfBtn");
@@ -16,28 +18,203 @@ const locationInput = document.getElementById("location");
 const budget = document.getElementById("budget");
 
 const results = document.getElementById("results");
+const reportsSection = document.querySelector("#reports .form-card");
 
+downloadPdfBtn.style.display = "none";
 
-// Check required elements
+// ============================================
+// LOCAL STORAGE FUNCTIONS
+// ============================================
 
-if (
-    !validateBtn ||
-    !downloadPdfBtn ||
-    !startupIdea ||
-    !audience ||
-    !locationInput ||
-    !budget ||
-    !results
-) {
-    console.error("Required HTML elements are missing!");
+function getSavedReports() {
+    try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    } catch (error) {
+        console.error("Could not read saved reports:", error);
+        return [];
+    }
 }
 
+function saveReport(report) {
+    try {
+        const reports = getSavedReports();
+
+        reports.unshift(report);
+
+        // Keep only the latest 20 reports
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(reports.slice(0, 20))
+        );
+
+        return true;
+    } catch (error) {
+        console.error("Could not save report:", error);
+        return false;
+    }
+}
 
 // ============================================
-// 2. STARTUP IDEA ANALYSIS
+// DISPLAY SAVED REPORTS
 // ============================================
 
-validateBtn.addEventListener("click", async function () {
+function renderSavedReports() {
+    if (!reportsSection) return;
+
+    const reports = getSavedReports();
+
+    if (reports.length === 0) {
+        reportsSection.innerHTML = `
+            <p>No saved reports yet.</p>
+            <p>Generate your first startup analysis!</p>
+        `;
+        return;
+    }
+
+    reportsSection.innerHTML = `
+        <div id="savedReportsList">
+            ${reports.map(report => `
+                <div class="feature-card">
+
+                    <h3>${escapeHTML(report.idea)}</h3>
+
+                    <p>
+                        📅 ${escapeHTML(report.createdAt)}
+                    </p>
+
+                    <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+
+                        <button
+                            class="report-action-btn"
+                            data-action="view"
+                            data-id="${escapeHTML(report.id)}">
+                            👁️ View Report
+                        </button>
+
+                        <button
+                            class="report-action-btn"
+                            data-action="delete"
+                            data-id="${escapeHTML(report.id)}">
+                            🗑️ Delete
+                        </button>
+
+                    </div>
+                </div>
+            `).join("")}
+        </div>
+    `;
+}
+
+// ============================================
+// VIEW AND DELETE REPORTS
+// ============================================
+
+reportsSection.addEventListener("click", function(event) {
+
+    const button = event.target.closest("button[data-action]");
+
+    if (!button) return;
+
+    const reportId = button.dataset.id;
+    const action = button.dataset.action;
+
+    const reports = getSavedReports();
+
+    const selectedReport = reports.find(
+        report => report.id === reportId
+    );
+
+    if (action === "view" && selectedReport) {
+
+        displayReport(selectedReport);
+
+        document.getElementById("validate").scrollIntoView({
+            behavior: "smooth"
+        });
+    }
+
+    if (action === "delete") {
+
+        if (!confirm("Are you sure you want to delete this report?")) {
+            return;
+        }
+
+        const updatedReports = reports.filter(
+            report => report.id !== reportId
+        );
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(updatedReports)
+        );
+
+        renderSavedReports();
+    }
+});
+
+// ============================================
+// DISPLAY A REPORT
+// ============================================
+
+function displayReport(report) {
+
+    const reportHTML = window.marked
+        ? window.marked.parse(report.report)
+        : `<pre>${escapeHTML(report.report)}</pre>`;
+
+    const safeReport = window.DOMPurify
+        ? window.DOMPurify.sanitize(reportHTML)
+        : `<pre>${escapeHTML(report.report)}</pre>`;
+
+    const sources = (report.web_results || [])
+        .map(item => {
+            const url = safeURL(item.url);
+
+            if (url === "#") return "";
+
+            return `
+                <li>
+                    <a href="${escapeHTML(url)}"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                       ${escapeHTML(item.title || item.url)}
+                    </a>
+                </li>
+            `;
+        })
+        .join("");
+
+    results.innerHTML = `
+        <div class="feature-card report-card">
+
+            <h2>🎉 Startup Analysis Report</h2>
+
+            <p><strong>Startup Idea:</strong>
+                ${escapeHTML(report.idea)}
+            </p>
+
+            <div class="report-content">
+                ${safeReport}
+            </div>
+
+            <div class="research-sources">
+                <h3>🔍 Research Sources</h3>
+                <ul>
+                    ${sources || "<li>No sources found.</li>"}
+                </ul>
+            </div>
+
+        </div>
+    `;
+
+    downloadPdfBtn.style.display = "block";
+}
+
+// ============================================
+// STARTUP IDEA ANALYSIS
+// ============================================
+
+validateBtn.addEventListener("click", async function() {
 
     const idea = startupIdea.value.trim();
 
@@ -54,238 +231,108 @@ validateBtn.addEventListener("click", async function () {
 
     results.innerHTML = `
         <div class="feature-card">
-            <h3>🤖 AI is researching your startup idea...</h3>
-            <p>Please wait while we analyze your market and competitors.</p>
+            <h3>🤖 AI is researching your idea...</h3>
+            <p>Please wait while your report is generated.</p>
         </div>
     `;
 
     try {
 
-        // Send request to FastAPI backend
+        const requestData = {
+            idea: idea,
+            audience: audience.value.trim() || "General customers",
+            location: locationInput.value.trim() || "India",
+            budget: budget.value.trim() || "Not specified"
+        };
 
-        const response = await fetch(
-            "https://ai-based-startup-idea-validator-lvvt.onrender.com/analyze",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    idea: idea,
-
-                    audience:
-                        audience.value.trim() || "General customers",
-
-                    location:
-                        locationInput.value.trim() || "India",
-
-                    budget:
-                        budget.value.trim() || "Not specified"
-
-                })
-            }
-        );
-
-
-        // Get API response
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify(requestData)
+        });
 
         const data = await response.json();
 
-
-        // Debugging information
-
-        console.log("API RESPONSE:", data);
-        console.log("REPORT:", data.report);
-        console.log("WEB RESULTS:", data.web_results);
-
-
-        // Check response
-
         if (!response.ok) {
-
             throw new Error(
                 typeof data.detail === "string"
                     ? data.detail
-                    : "Backend request failed. Status: " + response.status
+                    : JSON.stringify(data.detail || data)
             );
-
         }
 
-
-        if (!data.success) {
-            throw new Error("Startup analysis failed.");
-        }
-
-
-        if (
-            typeof data.report !== "string" ||
-            !data.report.trim()
-        ) {
+        if (!data.report || !data.report.trim()) {
             throw new Error("AI returned an empty report.");
         }
 
+        const newReport = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            idea: requestData.idea,
+            audience: requestData.audience,
+            location: requestData.location,
+            budget: requestData.budget,
+            report: data.report,
+            web_results: data.web_results || [],
+            createdAt: new Date().toLocaleString()
+        };
 
-        // ============================================
-        // 3. CONVERT MARKDOWN INTO HTML
-        // ============================================
+        displayReport(newReport);
 
-        let reportHTML;
+        const saved = saveReport(newReport);
 
-        if (window.marked) {
+        renderSavedReports();
 
-            reportHTML = window.marked.parse(data.report);
-
-        } else {
-
-            reportHTML = `<pre>${escapeHTML(data.report)}</pre>`;
-
+        if (!saved) {
+            alert("Report generated, but could not be saved in browser storage.");
         }
-
-
-        // Sanitize generated HTML
-
-        const safeReport = window.DOMPurify
-            ? window.DOMPurify.sanitize(reportHTML)
-            : `<pre>${escapeHTML(data.report)}</pre>`;
-
-
-        // ============================================
-        // 4. DISPLAY RESEARCH SOURCES
-        // ============================================
-
-        const sources = (data.web_results || [])
-            .map(item => {
-
-                const url = safeURL(item.url);
-
-                return `
-                    <li>
-                        <a
-                            href="${url}"
-                            target="_blank"
-                            rel="noopener noreferrer">
-
-                            ${escapeHTML(
-                                item.title ||
-                                item.url ||
-                                "Research Source"
-                            )}
-
-                        </a>
-                    </li>
-                `;
-
-            })
-            .join("");
-
-
-        // ============================================
-        // 5. DISPLAY FINAL REPORT
-        // ============================================
-
-        results.innerHTML = `
-
-            <div class="feature-card report-card">
-
-                <h2>🎉 Your Startup Analysis Report</h2>
-
-                <div class="report-content">
-                    ${safeReport}
-                </div>
-
-                <div class="research-sources">
-
-                    <h3>🔍 Research Sources</h3>
-
-                    <ul>
-                        ${
-                            sources ||
-                            "<li>No research sources found.</li>"
-                        }
-                    </ul>
-
-                </div>
-
-            </div>
-
-        `;
-
-
-        // Show PDF button
-
-        downloadPdfBtn.style.display = "block";
-
-        console.log("Startup report displayed successfully!");
-
 
     } catch (error) {
 
-        console.error("STARTUP ANALYSIS ERROR:", error);
+        console.error("Analysis error:", error);
 
         results.innerHTML = `
-
             <div class="feature-card">
-
                 <h3>❌ Analysis Error</h3>
-
                 <p>${escapeHTML(error.message)}</p>
-
-                <p>
-                    Please check whether the backend server
-                    is running.
-                </p>
-
+                <p>Please check your backend and internet connection.</p>
             </div>
-
         `;
 
     } finally {
 
         validateBtn.disabled = false;
-
         validateBtn.textContent = "Analyze My Startup →";
 
     }
-
 });
 
-
 // ============================================
-// 6. DOWNLOAD REPORT USING PRINT TO PDF
+// PDF DOWNLOAD
 // ============================================
 
-downloadPdfBtn.addEventListener("click", function () {
+downloadPdfBtn.addEventListener("click", function() {
+
     const report = document.querySelector(".report-card");
 
     if (!report) {
-        alert("Please generate a startup report first!");
+        alert("Please open a report first!");
         return;
     }
 
     const printWindow = window.open("", "_blank");
 
     if (!printWindow) {
-        alert("Please allow pop-ups for this website.");
+        alert("Please allow pop-ups for PDF download.");
         return;
     }
 
-    downloadPdfBtn.disabled = true;
-    downloadPdfBtn.textContent = "Preparing PDF...";
-
-    const reportHTML = report.innerHTML;
-
-    printWindow.document.open();
-
     printWindow.document.write(`
         <!DOCTYPE html>
-        <html lang="en">
+        <html>
         <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
             <title>Startup Analysis Report</title>
 
             <style>
@@ -294,55 +341,21 @@ downloadPdfBtn.addEventListener("click", function () {
                     margin: 15mm;
                 }
 
-                * {
-                    box-sizing: border-box;
-                }
-
                 body {
                     font-family: Arial, sans-serif;
                     color: #333;
-                    background: white;
-                    line-height: 1.6;
-                    font-size: 12px;
+                    line-height: 1.7;
                 }
 
-                h1, h2, h3 {
+                h1, h2 {
                     color: #343b80;
-                    page-break-after: avoid;
-                }
-
-                h1 {
-                    font-size: 25px;
-                }
-
-                h2 {
-                    font-size: 20px;
-                    margin-top: 25px;
-                }
-
-                h3 {
-                    font-size: 16px;
-                }
-
-                p, li {
-                    line-height: 1.6;
                 }
 
                 table {
                     width: 100%;
                     border-collapse: collapse;
-                    table-layout: auto;
-                    margin: 16px 0;
-                    page-break-inside: auto;
-                }
-
-                thead {
-                    display: table-header-group;
-                }
-
-                tr {
-                    page-break-inside: avoid;
-                    page-break-after: auto;
+                    margin: 15px 0;
+                    font-size: 12px;
                 }
 
                 th, td {
@@ -350,125 +363,81 @@ downloadPdfBtn.addEventListener("click", function () {
                     padding: 8px;
                     text-align: left;
                     overflow-wrap: anywhere;
-                    vertical-align: top;
                 }
 
                 th {
-                    background: #343b80 !important;
-                    color: white !important;
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
+                    background: #343b80;
+                    color: white;
                 }
 
-                ul, ol {
-                    padding-left: 22px;
+                img {
+                    max-width: 100%;
                 }
 
                 a {
-                    color: #343b80;
+                    color: #5146c8;
                     overflow-wrap: anywhere;
-                }
-
-                .research-sources {
-                    margin-top: 25px;
-                    padding: 15px;
-                    border: 1px solid #ddd;
-                    page-break-inside: avoid;
-                }
-
-                .report-content {
-                    width: 100%;
-                    overflow: visible;
                 }
 
                 pre {
                     white-space: pre-wrap;
-                    overflow-wrap: anywhere;
-                }
-
-                @media print {
-                    body {
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
                 }
             </style>
         </head>
 
         <body>
             <h1>🚀 Startup Validator AI</h1>
-
-            <div class="report-card">
-                ${reportHTML}
-            </div>
+            ${report.innerHTML}
         </body>
         </html>
     `);
 
     printWindow.document.close();
 
-    printWindow.onload = function () {
+    printWindow.onload = function() {
         printWindow.focus();
-
-        setTimeout(function () {
-            printWindow.print();
-
-            downloadPdfBtn.disabled = false;
-            downloadPdfBtn.textContent = "📥 Download PDF";
-        }, 500);
+        printWindow.print();
     };
+
 });
 
-
-
 // ============================================
-// 7. ESCAPE HTML CHARACTERS
+// HELPER FUNCTIONS
 // ============================================
 
 function escapeHTML(value) {
-
     return String(value).replace(/[&<>"']/g, char => ({
-
         "&": "&amp;",
-
         "<": "&lt;",
-
         ">": "&gt;",
-
         '"': "&quot;",
-
         "'": "&#39;"
-
     })[char]);
-
 }
 
-
-// ============================================
-// 8. VALIDATE RESEARCH SOURCE URLS
-// ============================================
-
 function safeURL(value) {
-
     try {
-
         const url = new URL(value);
 
         if (
             url.protocol === "http:" ||
             url.protocol === "https:"
         ) {
-
             return url.href;
-
         }
 
         return "#";
 
     } catch {
-
         return "#";
-
     }
-
 }
+
+// ============================================
+// LOAD REPORTS WHEN PAGE OPENS
+// ============================================
+
+renderSavedReports();
+
+console.log("Startup Validator AI is ready!");
+
