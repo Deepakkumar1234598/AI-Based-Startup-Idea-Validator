@@ -30,7 +30,7 @@ app.add_middleware(
         "http://localhost:5500",
         "http://127.0.0.1:5501",
         "http://localhost:5501",
-        "https://ai-based-startup-idea-validator-fro.vercel.app"
+        "https://ai-based-startup-idea-validator-f-git-e832cf-deepakkumar1234598.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
