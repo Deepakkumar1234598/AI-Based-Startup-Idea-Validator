@@ -336,8 +336,4 @@ Do not leave any table unfinished.
             detail=f"Analysis failed: {str(e)}"
         )
 
-              prompt_part_1 = common_context + """
-Generate PART 1 of the report.
-
-Start with:
-# Start
+              
