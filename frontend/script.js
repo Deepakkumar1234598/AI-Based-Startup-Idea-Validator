@@ -258,63 +258,37 @@ validateBtn.addEventListener("click", async function () {
 // ============================================
 
 downloadPdfBtn.addEventListener("click", function () {
-
     const report = document.querySelector(".report-card");
 
     if (!report) {
-
         alert("Please generate a startup report first!");
-
         return;
-
     }
-
-
-    // Open a new print window
 
     const printWindow = window.open("", "_blank");
 
     if (!printWindow) {
-
-        alert(
-            "Pop-up blocked! Please allow pop-ups for this website."
-        );
-
+        alert("Please allow pop-ups for this website.");
         return;
-
     }
 
-
     downloadPdfBtn.disabled = true;
-    downloadPdfBtn.textContent = "⏳ Preparing PDF...";
-
-
-    // Copy complete report HTML
+    downloadPdfBtn.textContent = "Preparing PDF...";
 
     const reportHTML = report.innerHTML;
-
-
-    // Create print document
 
     printWindow.document.open();
 
     printWindow.document.write(`
-
         <!DOCTYPE html>
-
         <html lang="en">
-
         <head>
-
             <meta charset="UTF-8">
-
-            <meta name="viewport"
-                  content="width=device-width, initial-scale=1.0">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
             <title>Startup Analysis Report</title>
 
             <style>
-
                 @page {
                     size: A4;
                     margin: 15mm;
@@ -326,92 +300,80 @@ downloadPdfBtn.addEventListener("click", function () {
 
                 body {
                     font-family: Arial, sans-serif;
-                    color: #333333;
-                    background: #ffffff;
+                    color: #333;
+                    background: white;
                     line-height: 1.6;
-                    margin: 0;
+                    font-size: 12px;
+                }
+
+                h1, h2, h3 {
+                    color: #343b80;
+                    page-break-after: avoid;
                 }
 
                 h1 {
-                    color: #343b80;
                     font-size: 25px;
-                    margin-bottom: 25px;
                 }
 
                 h2 {
-                    color: #343b80;
-                    font-size: 21px;
+                    font-size: 20px;
                     margin-top: 25px;
-                    page-break-after: avoid;
                 }
 
                 h3 {
-                    color: #5146c8;
-                    font-size: 17px;
-                    page-break-after: avoid;
+                    font-size: 16px;
                 }
 
-                p {
-                    font-size: 13px;
-                    line-height: 1.7;
+                p, li {
+                    line-height: 1.6;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    table-layout: auto;
+                    margin: 16px 0;
+                    page-break-inside: auto;
+                }
+
+                thead {
+                    display: table-header-group;
+                }
+
+                tr {
+                    page-break-inside: avoid;
+                    page-break-after: auto;
+                }
+
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                    overflow-wrap: anywhere;
+                    vertical-align: top;
+                }
+
+                th {
+                    background: #343b80 !important;
+                    color: white !important;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
                 }
 
                 ul, ol {
                     padding-left: 22px;
                 }
 
-                li {
-                    margin-bottom: 7px;
-                    font-size: 13px;
-                }
-
-                table {
-                    display: table;
-                    width: 100%;
-                    border-collapse: collapse;
-                    table-layout: fixed;
-                    margin: 18px 0;
-                    font-size: 10px;
-                }
-
-                th {
-                    background: #343b80 !important;
-                    color: #ffffff !important;
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-
-                th, td {
-                    border: 1px solid #dddddd;
-                    padding: 7px;
-                    text-align: left;
-                    overflow-wrap: anywhere;
-                }
-
-                tr {
-                    page-break-inside: avoid;
-                }
-
                 a {
-                    color: #5146c8;
-                    overflow-wrap: anywhere;
-                }
-
-                hr {
-                    border: none;
-                    border-top: 1px solid #dddddd;
-                    margin: 20px 0;
-                }
-
-                pre {
-                    white-space: pre-wrap;
+                    color: #343b80;
                     overflow-wrap: anywhere;
                 }
 
                 .research-sources {
                     margin-top: 25px;
                     padding: 15px;
-                    border: 1px solid #dddddd;
+                    border: 1px solid #ddd;
+                    page-break-inside: avoid;
                 }
 
                 .report-content {
@@ -419,52 +381,44 @@ downloadPdfBtn.addEventListener("click", function () {
                     overflow: visible;
                 }
 
-            </style>
+                pre {
+                    white-space: pre-wrap;
+                    overflow-wrap: anywhere;
+                }
 
+                @media print {
+                    body {
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                }
+            </style>
         </head>
 
         <body>
-
             <h1>🚀 Startup Validator AI</h1>
 
             <div class="report-card">
-
                 ${reportHTML}
-
             </div>
-
         </body>
-
         </html>
-
     `);
-
 
     printWindow.document.close();
 
-
-    // Wait until print document is ready
-
     printWindow.onload = function () {
-
         printWindow.focus();
 
-        printWindow.print();
+        setTimeout(function () {
+            printWindow.print();
 
+            downloadPdfBtn.disabled = false;
+            downloadPdfBtn.textContent = "📥 Download PDF";
+        }, 500);
     };
-
-
-    // Restore button after opening print window
-
-    setTimeout(function () {
-
-        downloadPdfBtn.disabled = false;
-
-        downloadPdfBtn.textContent = "📥 Download PDF";
-
-    }, 1500);
-
 });
+
 
 
 // ============================================
