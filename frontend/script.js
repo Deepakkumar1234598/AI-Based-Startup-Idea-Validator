@@ -64,7 +64,7 @@ validateBtn.addEventListener("click", async function () {
         // Send request to FastAPI backend
 
         const response = await fetch(
-            "http://127.0.0.1:8000/analyze",
+            "https://ai-based-startup-idea-validator-lvvt.onrender.com/analyze",
             {
                 method: "POST",
 
