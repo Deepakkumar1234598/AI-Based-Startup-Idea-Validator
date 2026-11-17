@@ -153,8 +153,14 @@ IMPORTANT RULES:
 11. Do not repeat sections assigned to other parts.
 """
 
+
         # STEP 3: GENERATE PART 1 (SECTIONS 1-4)
-up Validation Report
+
+        prompt_part_1 = common_context + """
+Generate PART 1 of the report.
+
+Start with:
+# Startup Validation Report
 
 Include startup idea, target audience, location and budget.
 
@@ -185,6 +191,7 @@ Do not start section 5.
 """
 
         part_1 = generate_report_part(llm, prompt_part_1)
+
 
         # STEP 4: GENERATE PART 2 (SECTIONS 5-8)
 
@@ -329,7 +336,7 @@ Do not leave any table unfinished.
             detail=f"Analysis failed: {str(e)}"
         )
 
-        prompt_part_1 = common_context + """
+              prompt_part_1 = common_context + """
 Generate PART 1 of the report.
 
 Start with:
