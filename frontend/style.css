@@ -693,3 +693,24 @@ footer {
 #savedReportsList .feature-card h3 {
     overflow-wrap: anywhere;
 }
+
+/* CLICKABLE INFORMATION CARDS */
+.info-clickable { cursor: pointer; position: relative; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.info-clickable:hover, .info-clickable:focus-visible { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(35, 43, 90, .13); outline: none; border-color: #777ff0; }
+.info-clickable:focus-visible { outline: 3px solid rgba(105, 112, 235, .35); outline-offset: 3px; }
+.info-clickable > small { display: inline-block; margin-top: 12px; color: #646de0; font-size: 12px; font-weight: 700; }
+.info-modal { display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+.info-modal.is-open { display: flex; }
+.info-modal-backdrop { position: absolute; inset: 0; background: rgba(13, 17, 42, .68); backdrop-filter: blur(4px); }
+.info-modal-dialog { position: relative; z-index: 1; width: min(100%, 590px); max-height: min(82vh, 720px); overflow-y: auto; background: #fff; border-radius: 18px; padding: 34px; box-shadow: 0 24px 80px rgba(0,0,0,.28); animation: infoModalIn .18s ease-out; }
+.info-modal-close { position: absolute; top: 13px; right: 16px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f0f1fa; color: #252a48; font-size: 27px; line-height: 1; cursor: pointer; }
+.info-modal-close:hover { background: #e2e4f7; }
+.info-modal-eyebrow { display: block; margin-bottom: 10px; color: #666fe0; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; }
+.info-modal-dialog h2 { color: #20243a; font-size: 25px; line-height: 1.25; padding-right: 25px; margin-bottom: 18px; }
+.info-modal-body p { color: #555b72; line-height: 1.7; margin: 0 0 13px; }
+.info-modal-body h3 { color: #272d4d; font-size: 15px; margin: 18px 0 8px; }
+.info-modal-body ul { padding-left: 21px; margin: 7px 0 15px; color: #555b72; }
+.info-modal-body li { margin: 7px 0; line-height: 1.55; }
+.info-modal-note { margin-top: 20px; padding: 12px 14px; border-left: 3px solid #777ff0; border-radius: 7px; background: #f4f5ff; color: #555b72; font-size: 12px; line-height: 1.6; }
+@keyframes infoModalIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 600px) { .info-modal { padding: 12px; } .info-modal-dialog { padding: 28px 22px 22px; border-radius: 14px; max-height: 88vh; } .info-modal-dialog h2 { font-size: 21px; } }
